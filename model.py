@@ -7,27 +7,22 @@
 #
 
 import numpy as np
-from sklearn.datasets import fetch_mldata
 from queue import Queue
 from typing import Optional, Union, List, Set, Any, Tuple, cast
-# import matplotlib.pyplot as plt
-
-iris = fetch_mldata('iris')
-x: np.ndarray = iris.data
-y: np.ndarray = iris.target
 
 
 class DecisionTreeNode(object):
-    def __init__(self, features: np.ndarray, target: Union[np.ndarray, List[int]]) -> None:
+    def __init__(self, features: np.ndarray, target: Union[np.ndarray, List[int]], depth=0) -> None:
         self.left: Optional[DecisionTreeNode] = None
         self.right: Optional[DecisionTreeNode] = None
         self.threshold: Optional[float] = None
         self.feature_index: Optional[int] = None
         self.gain = 0.0
         self.has_child = False
+        self.depth = depth
 
         self.features = features
-        self.target = target
+        self.target = target if isinstance(target, np.ndarray) else np.array(target)
 
     def _split_node(self, threshold: float, feature_index: int, gain: float) -> None:
         self.threshold = threshold
@@ -41,10 +36,17 @@ class DecisionTreeNode(object):
         if len(left_indices) < 5 or len(right_indices) < 5:
             pass
         else:
-            self.left = DecisionTreeNode(self.features[left_indices], self.target[left_indices])
-            self.right = DecisionTreeNode(self.features[right_indices], self.target[right_indices])
-
+            self.left = DecisionTreeNode(self.features[left_indices],
+                                         self.target[left_indices],
+                                         depth=self.depth+1)
+            self.right = DecisionTreeNode(self.features[right_indices],
+                                          self.target[right_indices],
+                                          depth=self.depth+1)
             self.has_child = True
+
+            del self.features, self.target
+            self.features = None
+            self.target = None
 
 
 class DecisionTree(object):
