@@ -1,4 +1,4 @@
-# 
+#
 # Copyright (c) 2018 Minato Sato
 # All rights reserved.
 #
@@ -90,13 +90,13 @@ class DecisionTree(object):
         return ret
 
     def calc_gain(self, feature: np.ndarray, target: np.ndarray, threshold: float) -> float:
-        classes: Set[int] = set(target)
+        classes = set(target)
         target_left = target[feature > threshold]
         target_right = target[feature <= threshold]
         gini_coef = self.gini_coef(target, classes)
         gini_coef_left = self.gini_coef(target_left, classes)
         gini_coef_right = self.gini_coef(target_right, classes)
-        gini_impurity = gini_coef_left * len(target_left) / len(target) - gini_coef_right * len(target_right) / len(target)
+        gini_impurity = gini_coef_left * len(target_left) / len(target) + gini_coef_right * len(target_right) / len(target)
         gain = gini_coef - gini_impurity
         return gain
 
