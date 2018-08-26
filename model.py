@@ -1,3 +1,10 @@
+# 
+# Copyright (c) 2018 Minato Sato
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+#
 
 import numpy as np
 from sklearn.datasets import fetch_mldata
@@ -57,7 +64,6 @@ class DecisionTree(object):
                 if current_node.has_child:
                     nodes.put(current_node.left)
                     nodes.put(current_node.right)
-
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -83,18 +89,18 @@ class DecisionTree(object):
             ret -= (len(target[target == _class]) / len(target))**2
         return ret
 
-    def calc_gini_impurity(self, feature: np.ndarray, target: np.ndarray, threshold: float):
+    def calc_gain(self, feature: np.ndarray, target: np.ndarray, threshold: float) -> float:
         classes: Set[int] = set(target)
         target_left = target[feature > threshold]
         target_right = target[feature <= threshold]
-        gini_coef: float = self.gini_coef(target, classes)
-        gini_coef_left: float = self.gini_coef(target_left, classes)
-        gini_coef_right: float = self.gini_coef(target_right, classes)
-        gini_impurity: float = gini_coef_left * len(target_left) / len(target) - gini_coef_right * len(target_right) / len(target)
-        gain: float = gini_coef - gini_impurity
+        gini_coef = self.gini_coef(target, classes)
+        gini_coef_left = self.gini_coef(target_left, classes)
+        gini_coef_right = self.gini_coef(target_right, classes)
+        gini_impurity = gini_coef_left * len(target_left) / len(target) - gini_coef_right * len(target_right) / len(target)
+        gain = gini_coef - gini_impurity
         return gain
 
-    def calc_best_gain(self, features, target) -> Tuple[float, int, float]:
+    def calc_best_gain(self, features: np.ndarray, target: np.ndarray) -> Tuple[float, int, float]:
         best_feature_index = -1
         best_gain = 0.0
         best_threshold = 0.0
@@ -103,7 +109,7 @@ class DecisionTree(object):
             thresholds = list(set(feature))
             thresholds.sort()
             for threshold in thresholds:
-                gain = self.calc_gini_impurity(feature, target, threshold)
+                gain = self.calc_gain(feature, target, threshold)
                 if gain > best_gain:
                     best_gain = gain
                     best_feature_index = feature_index
