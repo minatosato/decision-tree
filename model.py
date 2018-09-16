@@ -12,7 +12,7 @@ from typing import Optional, Union, List, Set, Any, Tuple, cast
 
 
 class DecisionTreeNode(object):
-    def __init__(self, features: np.ndarray, target: Union[np.ndarray, List[int]], depth=0) -> None:
+    def __init__(self, features: np.ndarray, target: Union[np.ndarray, List[Any]], depth=0) -> None:
         self.left: Optional[DecisionTreeNode] = None
         self.right: Optional[DecisionTreeNode] = None
         self.threshold: Optional[float] = None
@@ -50,8 +50,9 @@ class DecisionTreeNode(object):
 
 
 class DecisionTree(object):
-    def __init__(self) -> None:
+    def __init__(self, criterion: str = 'gini') -> None:
         self.root: Optional[DecisionTreeNode] = None
+        self.criterion = criterion
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> Any:
         self.root = DecisionTreeNode(X, y)
@@ -83,7 +84,7 @@ class DecisionTree(object):
             ret.append(classes[counts.argmax()])
         return np.array(ret)
 
-    def gini_coef(self, target: np.ndarray, classes: Union[List[int], Set[int]]) -> float:
+    def gini_impurity(self, target: np.ndarray, classes: Set[Any]) -> float:
         ret = 1.0
         if len(target) == 0:
             return ret
@@ -91,15 +92,28 @@ class DecisionTree(object):
             ret -= (len(target[target == _class]) / len(target))**2
         return ret
 
+    def entropy(self, target: np.ndarray, classes: Set[Any]) -> float:
+        ret = 0.0
+        if len(target) == 0:
+            return ret
+        for _class in classes:
+            p = len(target[target == _class]) / len(target)
+            ret -= p * np.log2(p)
+        return ret
+
     def calc_gain(self, feature: np.ndarray, target: np.ndarray, threshold: float) -> float:
         classes = set(target)
+        if self.criterion == 'gini':
+            criterion = self.gini_impurity
+        elif self.criterion == 'entropy':
+            criterion = self.entropy
         target_left = target[feature > threshold]
         target_right = target[feature <= threshold]
-        gini_coef = self.gini_coef(target, classes)
-        gini_coef_left = self.gini_coef(target_left, classes)
-        gini_coef_right = self.gini_coef(target_right, classes)
-        gini_impurity = gini_coef_left * len(target_left) / len(target) + gini_coef_right * len(target_right) / len(target)
-        gain = gini_coef - gini_impurity
+        criterion_before = criterion(target, classes)
+        criterion_left = criterion(target_left, classes)
+        criterion_right = criterion(target_right, classes)
+        criterion_after = criterion_left * len(target_left) / len(target) + criterion_right * len(target_right) / len(target)
+        gain = criterion_before - criterion_after
         return gain
 
     def calc_best_gain(self, features: np.ndarray, target: np.ndarray) -> Tuple[float, int, float]:
@@ -109,7 +123,7 @@ class DecisionTree(object):
         for feature_index in range(features.shape[1]):
             feature = features[:, feature_index]
             thresholds = list(set(feature))
-            thresholds.sort()
+            # thresholds.sort()
             for threshold in thresholds:
                 gain = self.calc_gain(feature, target, threshold)
                 if gain > best_gain:
